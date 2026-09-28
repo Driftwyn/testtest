@@ -1,5 +1,5 @@
 --[[
-    Driftwyn UI v6.0
+    Driftwyn UI v6.1
     Black / crimson Roblox UI library inspired by the supplied Driftwyn Hub mockup.
 
     Remote usage:
@@ -1204,7 +1204,7 @@ function DriftwynUI:CreateWindow(config)
     })
     local BackgroundShade = New("Frame", {
         BackgroundColor3 = Color3.fromRGB(3, 6, 12),
-        BackgroundTransparency = 0.36,
+        BackgroundTransparency = math.clamp(tonumber(config.BackgroundShadeTransparency) or 0.62, 0, 1),
         BorderSizePixel = 0,
         Size = UDim2.fromScale(1, 1),
         ZIndex = 3,
@@ -1219,6 +1219,10 @@ function DriftwynUI:CreateWindow(config)
         BackgroundShade.Visible = source ~= ""
         if self._ApplyTheme then self:_ApplyTheme() end
         return source ~= ""
+    end
+
+    function Window:SetBackgroundShadeTransparency(value)
+        BackgroundShade.BackgroundTransparency = math.clamp(tonumber(value) or 0.62, 0, 1)
     end
 
     AddNoiseDecor(Root, T())
@@ -1514,7 +1518,7 @@ function DriftwynUI:CreateWindow(config)
         Position = UDim2.fromOffset(60, 39),
         Size = UDim2.new(1, -92, 0, 20),
         Font = Enum.Font.Gotham,
-        Text = config.Version or "v6.0",
+        Text = config.Version or "v6.1",
         TextColor3 = T().TextDim,
         TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1577,7 +1581,7 @@ function DriftwynUI:CreateWindow(config)
         rootStroke.Color = th.Border
         Shadow.BackgroundColor3 = th.Shadow
         Header.BackgroundColor3 = th.Background
-        Header.BackgroundTransparency = BackgroundImage.Visible and 0.22 or 0.03
+        Header.BackgroundTransparency = BackgroundImage.Visible and 0.78 or 0.03
         headerLine.BackgroundColor3 = th.Border
         LogoWrap.BackgroundColor3 = th.Surface
         logoStroke.Color = th.Accent
@@ -1590,7 +1594,7 @@ function DriftwynUI:CreateWindow(config)
         Close.TextColor3 = th.Text
         closeStroke.Color = th.Accent
         Sidebar.BackgroundColor3 = th.Background
-        Sidebar.BackgroundTransparency = BackgroundImage.Visible and 0.22 or 0.06
+        Sidebar.BackgroundTransparency = BackgroundImage.Visible and 0.82 or 0.06
         sidebarLine.BackgroundColor3 = th.BorderSoft
         SearchBox.BackgroundColor3 = th.Surface
         searchStroke.Color = th.BorderSoft
@@ -1600,6 +1604,7 @@ function DriftwynUI:CreateWindow(config)
         SearchHint.BackgroundColor3 = th.Surface2
         SearchHint.TextColor3 = th.TextFaint
         Footer.BackgroundColor3 = th.Background2
+        Footer.BackgroundTransparency = BackgroundImage.Visible and 0.78 or 0.15
         footerTop.BackgroundColor3 = th.BorderSoft
         fireCircle.BackgroundColor3 = th.Surface2
         fireIcon.TextColor3 = th.Accent
@@ -2405,7 +2410,7 @@ function DriftwynUI:CreateWindow(config)
 
             ThemeBind(function(th)
                 SectionRoot.BackgroundColor3 = th.Background2
-                SectionRoot.BackgroundTransparency = BackgroundImage.Visible and 0.14 or 0
+                SectionRoot.BackgroundTransparency = BackgroundImage.Visible and 0.70 or 0
                 sectionStroke.Color = th.Border
                 SectionIconCircle.BackgroundColor3 = th.Surface2
                 sectionIconStroke.Color = th.Border
@@ -2479,7 +2484,7 @@ function DriftwynUI:CreateWindow(config)
 
                 ThemeBind(function(th)
                     Row.BackgroundColor3 = th.Surface
-                    Row.BackgroundTransparency = BackgroundImage.Visible and 0.08 or 0
+                    Row.BackgroundTransparency = BackgroundImage.Visible and 0.36 or 0
                     rowStroke.Color = th.BorderSoft
                     IconCircle.BackgroundColor3 = th.Surface2
                     iconStroke.Color = th.Border
