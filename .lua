@@ -1,5 +1,5 @@
 --[[
-    Driftwyn UI v6.1
+    Driftwyn UI v6.2
     Black / crimson Roblox UI library inspired by the supplied Driftwyn Hub mockup.
 
     Remote usage:
@@ -1451,7 +1451,7 @@ function DriftwynUI:CreateWindow(config)
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Position = UDim2.fromOffset(0, 76),
-        Size = UDim2.new(1, 0, 1, -160),
+        Size = UDim2.new(1, 0, 1, -202),
         CanvasSize = UDim2.new(),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         ScrollBarThickness = 0,
@@ -1471,7 +1471,7 @@ function DriftwynUI:CreateWindow(config)
         BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
         Position = UDim2.new(0, 0, 1, 0),
-        Size = UDim2.new(1, 0, 0, 84),
+        Size = UDim2.new(1, 0, 0, 126),
         ZIndex = 6,
         Parent = Sidebar
     })
@@ -1518,7 +1518,7 @@ function DriftwynUI:CreateWindow(config)
         Position = UDim2.fromOffset(60, 39),
         Size = UDim2.new(1, -92, 0, 20),
         Font = Enum.Font.Gotham,
-        Text = config.Version or "v6.1",
+        Text = config.Version or "v6.2",
         TextColor3 = T().TextDim,
         TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1529,12 +1529,88 @@ function DriftwynUI:CreateWindow(config)
         AnchorPoint = Vector2.new(1, 0.5),
         BackgroundColor3 = T().Accent,
         BorderSizePixel = 0,
-        Position = UDim2.new(1, -19, 0.5, 0),
+        Position = UDim2.new(1, -19, 0, 30),
         Size = UDim2.fromOffset(8, 8),
         Parent = Footer
     })
     Corner(StatusDot, 4)
     local dotStroke = Stroke(StatusDot, Lighten(T().Accent, 0.35), 1, 0.25)
+
+    local KeyTimeLabel = New("TextLabel", {
+        BackgroundTransparency = 1,
+        Position = UDim2.fromOffset(18, 69),
+        Size = UDim2.new(1, -36, 0, 18),
+        Font = Enum.Font.GothamMedium,
+        Text = "KEY LEFT  --:--:--",
+        TextColor3 = T().TextDim,
+        TextSize = 11,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = Footer
+    })
+
+    local PlayTimeLabel = New("TextLabel", {
+        BackgroundTransparency = 1,
+        Position = UDim2.fromOffset(18, 91),
+        Size = UDim2.new(1, -36, 0, 18),
+        Font = Enum.Font.GothamMedium,
+        Text = "IN GAME  00:00:00",
+        TextColor3 = T().TextDim,
+        TextSize = 11,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = Footer
+    })
+
+    local function formatClock(seconds)
+        seconds = math.max(0, math.floor(seconds))
+        local hours = math.floor(seconds / 3600)
+        local minutes = math.floor(seconds / 60) % 60
+        return string.format("%02d:%02d:%02d", hours, minutes, seconds % 60)
+    end
+
+    Window.KeyExpiresAt = tonumber(config.KeyExpiresAt)
+    Window.KeyExpiryEstimated = config.KeyExpiryEstimated == true
+
+    local function getSharedKeyTime()
+        local ok, env = pcall(function()
+            return type(getgenv) == "function" and getgenv() or _G
+        end)
+        local session = ok and type(env) == "table" and env.DriftwynSession
+        if type(session) ~= "table" then return nil end
+        return tonumber(session.keyExpiresAt), session.keyExpiryEstimated == true
+    end
+
+    local function updateClocks()
+        PlayTimeLabel.Text = "IN GAME  " .. formatClock(time())
+        local expiresAt, estimated = Window.KeyExpiresAt, Window.KeyExpiryEstimated
+        if not expiresAt then expiresAt, estimated = getSharedKeyTime() end
+        if expiresAt then
+            local remaining = math.max(0, expiresAt - os.time())
+            KeyTimeLabel.Text = remaining == 0 and "KEY  EXPIRED"
+                or ((estimated and "KEY ~  " or "KEY LEFT  ") .. formatClock(remaining))
+        else
+            KeyTimeLabel.Text = "KEY LEFT  --:--:--"
+        end
+    end
+
+    function Window:SetKeyExpiration(expiresAt, estimated)
+        self.KeyExpiresAt = tonumber(expiresAt)
+        self.KeyExpiryEstimated = estimated == true
+        updateClocks()
+    end
+
+    function Window:GetKeyExpiration()
+        return self.KeyExpiresAt
+    end
+
+    updateClocks()
+    local clockAccumulator = 0
+    ConnectGlobal(RunService.Heartbeat, function(deltaTime)
+        clockAccumulator = clockAccumulator + deltaTime
+        if clockAccumulator >= 1 then
+            clockAccumulator = 0
+            updateClocks()
+        end
+    end)
 
     local Content = New("Frame", {
         BackgroundTransparency = 1,
@@ -1610,6 +1686,8 @@ function DriftwynUI:CreateWindow(config)
         fireIcon.TextColor3 = th.Accent
         FooterName.TextColor3 = th.Accent
         FooterVersion.TextColor3 = th.TextDim
+        KeyTimeLabel.TextColor3 = th.Accent
+        PlayTimeLabel.TextColor3 = th.TextDim
         SidebarWatermark.TextColor3 = th.Accent
         SplitArrow.TextColor3 = th.Accent
         StatusDot.BackgroundColor3 = th.Accent
