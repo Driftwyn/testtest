@@ -1,5 +1,5 @@
 --[[
-    Driftwyn UI v5.8
+    Driftwyn UI v5.9
     Black / crimson Roblox UI library inspired by the supplied Driftwyn Hub mockup.
 
     Remote usage:
@@ -1688,6 +1688,7 @@ function DriftwynUI:CreateWindow(config)
                     BackgroundColor3 = T().Surface,
                     BorderSizePixel = 0,
                     Size = UDim2.new(1, 0, 0, 58),
+                    LayoutOrder = #Section.Rows * 2 + 1,
                     ZIndex = 9,
                     Parent = SectionRoot
                 })
@@ -2238,26 +2239,13 @@ function DriftwynUI:CreateWindow(config)
                         return
                     end
 
-                    local currentPosition = closingPopup.Position
                     local currentSize = closingPopup.Size
-                    local collapseY = currentPosition.Y.Offset
-
-                    if closingPopup:GetAttribute("OpensUp") == true then
-                        collapseY = currentPosition.Y.Offset + currentSize.Y.Offset
-                    end
 
                     Tween(
                         closingPopup,
                         0.26,
                         {
-                            Position = UDim2.fromOffset(
-                                currentPosition.X.Offset,
-                                collapseY
-                            ),
-                            Size = UDim2.fromOffset(
-                                currentSize.X.Offset,
-                                0
-                            ),
+                            Size = UDim2.new(currentSize.X.Scale, currentSize.X.Offset, 0, 0),
                             GroupTransparency = 1
                         },
                         Enum.EasingStyle.Quart,
@@ -2415,57 +2403,16 @@ function DriftwynUI:CreateWindow(config)
                     local listHeight = math.min(#values * 30 + 8, 170)
                     local popupHeight = searchHeight + listHeight
 
-                    local buttonPos = Button.AbsolutePosition
-                    local buttonSize = Button.AbsoluteSize
-                    local camera = workspace.CurrentCamera
-                    local viewportSize =
-                        camera and camera.ViewportSize
-                        or Vector2.new(1366, 768)
-
-                    local popupX = buttonPos.X
-                    local popupY = buttonPos.Y + buttonSize.Y + 6
-                    local opensUp = false
-
-                    if popupY + popupHeight > viewportSize.Y - 8 then
-                        popupY = buttonPos.Y - popupHeight - 6
-                        opensUp = true
-                    end
-
-                    popupX = math.clamp(
-                        popupX,
-                        8,
-                        math.max(8, viewportSize.X - buttonSize.X - 8)
-                    )
-
-                    popupY = math.clamp(
-                        popupY,
-                        8,
-                        math.max(8, viewportSize.Y - popupHeight - 8)
-                    )
-
-                    local collapsedY =
-                        opensUp
-                        and (popupY + popupHeight)
-                        or popupY
-
                     popup = New("CanvasGroup", {
                         BackgroundColor3 = T().Background2,
                         BorderSizePixel = 0,
-                        Position = UDim2.fromOffset(
-                            popupX,
-                            collapsedY
-                        ),
-                        Size = UDim2.fromOffset(
-                            Button.AbsoluteSize.X,
-                            0
-                        ),
+                        Size = UDim2.new(1, 0, 0, 0),
+                        LayoutOrder = Row.LayoutOrder + 1,
                         ClipsDescendants = true,
                         GroupTransparency = 1,
-                        ZIndex = 400,
-                        Parent = ScreenGui
+                        ZIndex = 12,
+                        Parent = SectionRoot
                     })
-
-                    popup:SetAttribute("OpensUp", opensUp)
 
                     Corner(popup, 9)
 
@@ -2498,7 +2445,7 @@ function DriftwynUI:CreateWindow(config)
                             TextColor3 = T().Text,
                             TextSize = 10,
                             TextXAlignment = Enum.TextXAlignment.Left,
-                            ZIndex = 402,
+                            ZIndex = 14,
                             Parent = popup
                         })
 
@@ -2529,7 +2476,7 @@ function DriftwynUI:CreateWindow(config)
                         ScrollBarThickness = 2,
                         ScrollBarImageColor3 = T().Accent,
                         ScrollBarImageTransparency = 0.28,
-                        ZIndex = 401,
+                        ZIndex = 13,
                         Parent = popup
                     })
 
@@ -2610,7 +2557,7 @@ function DriftwynUI:CreateWindow(config)
                             TextTransparency = 1,
                             TextSize = 11,
                             TextXAlignment = Enum.TextXAlignment.Left,
-                            ZIndex = 402,
+                            ZIndex = 14,
                             LayoutOrder = index,
                             Parent = list
                         })
@@ -2770,14 +2717,7 @@ function DriftwynUI:CreateWindow(config)
                         popup,
                         0.34,
                         {
-                            Position = UDim2.fromOffset(
-                                popupX,
-                                popupY
-                            ),
-                            Size = UDim2.fromOffset(
-                                Button.AbsoluteSize.X,
-                                popupHeight
-                            ),
+                            Size = UDim2.new(1, 0, 0, popupHeight),
                             GroupTransparency = 0
                         },
                         Enum.EasingStyle.Quint,
@@ -2799,6 +2739,22 @@ function DriftwynUI:CreateWindow(config)
                         Enum.EasingStyle.Quint,
                         Enum.EasingDirection.Out
                     )
+
+                    local openedPopup = popup
+                    task.delay(0.36, function()
+                        if not openedPopup or not openedPopup.Parent or not opened then
+                            return
+                        end
+                        local visibleBottom = Scroll.AbsolutePosition.Y + Scroll.AbsoluteSize.Y - 10
+                        local popupBottom = openedPopup.AbsolutePosition.Y + openedPopup.AbsoluteSize.Y
+                        local extra = math.max(0, popupBottom - visibleBottom)
+                        if extra > 0 then
+                            Scroll.CanvasPosition = Vector2.new(
+                                Scroll.CanvasPosition.X,
+                                Scroll.CanvasPosition.Y + extra
+                            )
+                        end
+                    end)
                 end)
 
                 ThemeBind(function(th)
