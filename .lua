@@ -1163,8 +1163,19 @@ function DriftwynUI:CreateWindow(config)
 
     local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1366, 768)
     local wanted = config.Size or UDim2.fromOffset(860, 560)
-    local width = math.min(wanted.X.Offset, math.max(700, viewport.X - 40))
-    local height = math.min(wanted.Y.Offset, math.max(480, viewport.Y - 40))
+    local width = math.max(700, wanted.X.Offset)
+    local height = math.max(480, wanted.Y.Offset)
+    local mobilePortrait = viewport.X < 700 and viewport.Y > viewport.X
+    if mobilePortrait then
+        width, height = 700, 1000
+    end
+    local function fitScale(vp)
+        local margin = mobilePortrait and 16 or 30
+        return math.clamp(math.min(
+            (vp.X - margin) / (width + 18),
+            (vp.Y - margin) / (height + 18)
+        ), 0.28, 1)
+    end
 
     local Shadow = New("Frame", {
         AnchorPoint = Vector2.new(0.5, 0.5),
@@ -1189,7 +1200,41 @@ function DriftwynUI:CreateWindow(config)
         Parent = ScreenGui
     })
     Corner(Root, 15)
+    local rootScale = New("UIScale", {Scale = fitScale(viewport), Parent = Root})
+    local shadowScale = New("UIScale", {Scale = fitScale(viewport), Parent = Shadow})
     local rootStroke = Stroke(Root, T().Border, 1, 0.05)
+    local minimized = false
+    local fullSize = Root.Size
+    local function updateViewport()
+        local camera = workspace.CurrentCamera
+        if not camera then return end
+        local vp = camera.ViewportSize
+        mobilePortrait = vp.X < 700 and vp.Y > vp.X
+        width = mobilePortrait and 700 or math.max(700, wanted.X.Offset)
+        height = mobilePortrait and 1000 or math.max(480, wanted.Y.Offset)
+        local factor = fitScale(vp)
+        rootScale.Scale = factor
+        shadowScale.Scale = factor
+        local targetSize = UDim2.fromOffset(width, height)
+        if not minimized then Root.Size = targetSize end
+        fullSize = targetSize
+        Shadow.Size = UDim2.fromOffset(width + 18, height + 18)
+    end
+    local viewportConnection
+    local function connectViewport()
+        if viewportConnection then viewportConnection:Disconnect() end
+        local camera = workspace.CurrentCamera
+        if camera then
+            viewportConnection = camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateViewport)
+            updateViewport()
+        end
+    end
+    connectViewport()
+    ConnectGlobal(workspace:GetPropertyChangedSignal("CurrentCamera"), connectViewport)
+    ScreenGui.Destroying:Connect(function()
+        if viewportConnection then viewportConnection:Disconnect() end
+    end)
+
 
     local backgroundSource = ResolveBackgroundImage(config.BackgroundImage)
     local BackgroundImage = New("ImageLabel", {
@@ -1806,8 +1851,6 @@ function DriftwynUI:CreateWindow(config)
     end
 
     local hidden = false
-    local minimized = false
-    local fullSize = Root.Size
 
     --========================================================
     -- MINI CIRCLE
@@ -2017,9 +2060,9 @@ function DriftwynUI:CreateWindow(config)
         if minimized then
             Root.Visible = false
             Shadow.Visible = false
-            MiniCircle.Visible = state
+            MiniCircle.Visible = state or UserInputService.TouchEnabled
         else
-            MiniCircle.Visible = false
+            MiniCircle.Visible = not state and UserInputService.TouchEnabled
             Root.Visible = state
             Shadow.Visible = state
         end
@@ -2053,7 +2096,12 @@ function DriftwynUI:CreateWindow(config)
             return
         end
 
-        restoreWindow()
+        if hidden then
+            Window:SetVisible(true)
+            if minimized then restoreWindow() end
+        else
+            restoreWindow()
+        end
     end)
 
     MiniCircle.MouseEnter:Connect(function()
@@ -2669,8 +2717,9 @@ function DriftwynUI:CreateWindow(config)
                     set(not value, true)
                 end)
                 Row.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                        local p = UserInputService:GetMouseLocation()
+                    if input.UserInputType == Enum.UserInputType.MouseButton1
+                    or input.UserInputType == Enum.UserInputType.Touch then
+                        local p = input.Position
                         local ap = Track.AbsolutePosition
                         local as = Track.AbsoluteSize
                         if not (p.X >= ap.X and p.X <= ap.X + as.X and p.Y >= ap.Y and p.Y <= ap.Y + as.Y) then
